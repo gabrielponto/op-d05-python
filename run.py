@@ -7,24 +7,21 @@ Quem mais recebe e quem menos recebe em cada área e a média salarial em cada �
 A área com mais funcionários e a área com menos funcionários
 Das pessoas que têm o mesmo sobrenome, aquela que recebe mais (não inclua sobrenomes que apenas uma pessoa tem nos resultados)
 """
-import json
+import ijson
+import os
+import sys
 
 # abre o arquivo json
-arquivo = open('funcionarios.json', 'r')
-# lê o seu conteúdo. O método read() retorna todo o conteúdo do arquivo em uma variável string
-content = arquivo.read()
-# fecha o arquivo pois já temos o conteúdo na memória através da variável content
-arquivo.close()
-
-# converte a string em um objeto do python, especificamente dict
-content = json.loads(content)
-
+file_name = 'funcionarios-10k.json'
+arquivo = open(file_name)
+file_size = os.path.getsize(file_name)
 # Aqui declaramos todas as variáveis que utilizaremos para armazenar os resultados desejados
 # é interessante que o nome da variável seja bem descritivo, mesmo sendo maior.
 
 # os funcionários que mais recebem e os que menos recebem, e a média salarial da empresa
 # para calcular a média precisaremos da quantidade de funcionários (len(funcionarios))
 # e a soma
+funcionario_conta = 0
 funcionario_mais_recebe = None
 funcionario_menos_recebe = None
 funcionario_soma_receita = 0
@@ -52,11 +49,36 @@ sobrenome_controle_duplicados = []
 
 # reorganiza as áreas para serem requisitadas por chave
 areas = {}
-for area in content['areas']:
-    areas[area['codigo']] = area
+#for json_areas in ijson.items(arquivo, 'areas'):
+#    for area in json_areas:
+#        areas[area['codigo']] = area
+
+arquivo.close()
+arquivo = open(file_name)
 
 # coletamos os dados dos funcionários
-for funcionario in content['funcionarios']:
+funcionario = {}
+
+# vamos controlar o status para mostrar na tela
+status = 0
+line = 0
+for prefix, the_type, value in ijson.parse(arquivo):
+    # cada caracter tem um byte, então vamos dividir para atualizar
+    # vamos suport que cada linha tem aproximadamente 36 bytes
+    #line_size = 7 * line
+    #status = (line_size * 100) / file_size
+    #sys.stdout.write('{}%\r'.format(status))
+    ##sys.stdout.flush()
+    #line += 1
+
+    if 'funcionarios.item' in prefix:
+        key = prefix.replace('funcionarios.item.', '')
+        funcionario[key] = value
+        if the_type != 'end_map':
+            continue
+    else:
+        continue
+
     # utilizamos bastante o campo salário do funcionário
     # então criamos uma variável para armazená-lo
     salario = funcionario['salario']
@@ -78,6 +100,10 @@ for funcionario in content['funcionarios']:
             funcionario_menos_recebe = funcionario.copy()
 
     area_codigo = funcionario['area']
+
+    if not area_codigo in areas:
+        areas[area_codigo] = {'codigo': area_codigo}
+
     area = areas[area_codigo]
 
     if area_codigo not in funcionario_area_mais_recebe:
@@ -131,9 +157,13 @@ for funcionario in content['funcionarios']:
     else:
         funcionario_area_soma_receita[area_codigo] += salario
         funcionario_area_conta[area_codigo] += 1
+
+    # reinicia a variável funcionario
+    funcionario_conta += 1
+    funcionario = {}
     
 
-funcionario_media_receita = funcionario_soma_receita / len(content['funcionarios'])
+funcionario_media_receita = funcionario_soma_receita / funcionario_conta
 
 funcionario = funcionario_mais_recebe
 print(u"O Funcionario que mais recebe é %s %s, de ID %s com o salário de %d" % (funcionario['nome'], funcionario['sobrenome'], funcionario['id'], funcionario['salario']))
