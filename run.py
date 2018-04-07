@@ -113,16 +113,24 @@ for prefix, the_type, value in ijson.parse(arquivo):
     area = areas[area_codigo]
 
     if area_codigo not in funcionario_area_mais_recebe:
-        funcionario_area_mais_recebe[area_codigo] = funcionario.copy()
+        funcionario_area_mais_recebe[area_codigo] = []
+        funcionario_area_mais_recebe[area_codigo].append(funcionario.copy())
     else:
-        if salario > funcionario_area_mais_recebe[area_codigo]['salario']:
-            funcionario_area_mais_recebe[area_codigo] = funcionario.copy()
+        if salario > funcionario_area_mais_recebe[area_codigo][0]['salario']:
+            funcionario_area_mais_recebe[area_codigo] = []
+            funcionario_area_mais_recebe[area_codigo].append(funcionario.copy())
+        elif salario == funcionario_area_mais_recebe[area_codigo][0]['salario']:
+            funcionario_area_mais_recebe[area_codigo].append(funcionario.copy())
 
     if area_codigo not in funcionario_area_menos_recebe:
-        funcionario_area_menos_recebe[area_codigo] = funcionario.copy()
+        funcionario_area_menos_recebe[area_codigo] = []
+        funcionario_area_menos_recebe[area_codigo].append(funcionario.copy())
     else:
-        if salario < funcionario_area_menos_recebe[area_codigo]['salario']:
-            funcionario_area_menos_recebe[area_codigo] = funcionario.copy()
+        if salario < funcionario_area_menos_recebe[area_codigo][0]['salario']:
+            funcionario_area_menos_recebe[area_codigo] = []
+            funcionario_area_menos_recebe[area_codigo].append(funcionario.copy())
+        elif salario == funcionario_area_menos_recebe[area_codigo][0]['salario']:
+            funcionario_area_menos_recebe[area_codigo].append(funcionario.copy())
 
     # inicializa o controle de soma dos funcionários para esse código da área
     if not area_codigo in area_funcionarios_soma:
@@ -131,23 +139,29 @@ for prefix, the_type, value in ijson.parse(arquivo):
         area_funcionarios_soma[area_codigo] += 1
         
     if not area_mais_funcionarios:
-        area_mais_funcionarios = area.copy()
+        area_mais_funcionarios = [area.copy()]
     else:
-        if area_funcionarios_soma[area_codigo] > area_funcionarios_soma[area_mais_funcionarios['codigo']]:
-            area_mais_funcionarios = area.copy()
+        if area_funcionarios_soma[area_codigo] > area_funcionarios_soma[area_mais_funcionarios[0]['codigo']]:
+            area_mais_funcionarios = [area.copy()]
+        elif area_funcionarios_soma[area_codigo] == area_funcionarios_soma[area_mais_funcionarios[0]['codigo']]:
+            area_mais_funcionarios.append(area.copy())
     if not area_menos_funcionarios:
-        area_menos_funcionarios = area.copy()
+        area_menos_funcionarios = [area.copy()]
     else:
-        if area_funcionarios_soma[area_codigo] < area_funcionarios_soma[area_mais_funcionarios['codigo']]:
-            area_mais_funcionarios = area.copy()
+        if area_funcionarios_soma[area_codigo] < area_funcionarios_soma[area_menos_funcionarios[0]['codigo']]:
+            area_menos_funcionarios = [area.copy()]
+        elif area_funcionarios_soma[area_codigo] == area_funcionarios_soma[area_menos_funcionarios[0]['codigo']]:
+            area_menos_funcionarios.append(area.copy())
 
     # antes de adicionar o sobrenome no controle é preciso verificar se já existe
     sobrenome = funcionario['sobrenome']
     if not sobrenome in sobrenome_mais_recebe:
-        sobrenome_mais_recebe[sobrenome] = funcionario.copy()
+        sobrenome_mais_recebe[sobrenome] = [funcionario.copy()]
     else:
-        if salario > sobrenome_mais_recebe[sobrenome]['salario']:
-            sobrenome_mais_recebe[sobrenome] = funcionario.copy()
+        if salario > sobrenome_mais_recebe[sobrenome][0]['salario']:
+            sobrenome_mais_recebe[sobrenome] = [funcionario.copy()]
+        elif salario == sobrenome_mais_recebe[sobrenome][0]['salario']:
+            sobrenome_mais_recebe[sobrenome].append(funcionario.copy())
     if sobrenome in sobrenome_controle:
         if not sobrenome in sobrenome_controle_duplicados:
             sobrenome_controle_duplicados.append(sobrenome)
@@ -177,15 +191,20 @@ for funcionario in funcionario_menos_recebe:
 print(u"global_avg|%.2f" % funcionario_media_receita)
 
 for area_codigo, area in funcionario_area_mais_recebe.items():
-    print(u"area_max|%s|%s %s|%.2f" % (areas[area_codigo]['nome'], area['nome'], area['sobrenome'], area['salario']))
+    for funcionario in area:
+        print(u"area_max|%s|%s %s|%.2f" % (areas[area_codigo]['nome'], funcionario['nome'], funcionario['sobrenome'], funcionario['salario']))
 for area_codigo, area in funcionario_area_menos_recebe.items():
-    print(u"area_min|%s|%s %s|%.2f" % (areas[area_codigo]['nome'], area['nome'], area['sobrenome'], area['salario']))
+    for funcionario in area:
+        print(u"area_min|%s|%s %s|%.2f" % (areas[area_codigo]['nome'], funcionario['nome'], funcionario['sobrenome'], funcionario['salario']))
 for area_codigo, area in areas.items():
     media = funcionario_area_soma_receita[area_codigo] / funcionario_area_conta[area_codigo]
     print(u"area_avg|%s|%.2f" % (areas[area_codigo]['nome'], media))
 
-print(u"most_employees|%s|%d" % (area_mais_funcionarios['nome'], area_funcionarios_soma[area_mais_funcionarios['codigo']]))
-print(u"least_employees|%s|%d" % (area_menos_funcionarios['nome'], area_funcionarios_soma[area_menos_funcionarios['codigo']]))
+for funcionario in area_mais_funcionarios:
+    print(u"most_employees|%s|%d" % (funcionario['nome'], area_funcionarios_soma[funcionario['codigo']]))
+for funcionario in area_menos_funcionarios:
+    print(u"least_employees|%s|%d" % (funcionario['nome'], area_funcionarios_soma[funcionario['codigo']]))
 for sobrenome in sobrenome_controle_duplicados:
-    funcionario = sobrenome_mais_recebe[sobrenome]
-    print(u"last_name_max|%s|%s %s|%.2f" % (funcionario['nome'], funcionario['nome'], funcionario['sobrenome'], funcionario['salario']))
+    funcionarios = sobrenome_mais_recebe[sobrenome]
+    for funcionario in funcionarios:
+        print(u"last_name_max|%s|%s %s|%.2f" % (funcionario['nome'], funcionario['nome'], funcionario['sobrenome'], funcionario['salario']))
