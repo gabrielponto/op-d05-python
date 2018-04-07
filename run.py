@@ -12,7 +12,7 @@ import os
 import sys
 
 # abre o arquivo json
-file_name = 'funcionarios-10k.json'
+file_name = 'funcionarios.json'
 arquivo = open(file_name)
 file_size = os.path.getsize(file_name)
 # Aqui declaramos todas as variáveis que utilizaremos para armazenar os resultados desejados
@@ -22,8 +22,8 @@ file_size = os.path.getsize(file_name)
 # para calcular a média precisaremos da quantidade de funcionários (len(funcionarios))
 # e a soma
 funcionario_conta = 0
-funcionario_mais_recebe = None
-funcionario_menos_recebe = None
+funcionario_mais_recebe = []
+funcionario_menos_recebe = []
 funcionario_soma_receita = 0
 funcionario_media_receita = None
 # os funcionários que mais recebem e os que menos recebem de CADA ÁREA, e a média salarial em cada área
@@ -49,9 +49,9 @@ sobrenome_controle_duplicados = []
 
 # reorganiza as áreas para serem requisitadas por chave
 areas = {}
-#for json_areas in ijson.items(arquivo, 'areas'):
-#    for area in json_areas:
-#        areas[area['codigo']] = area
+for json_areas in ijson.items(arquivo, 'areas'):
+    for area in json_areas:
+        areas[area['codigo']] = area
 
 arquivo.close()
 arquivo = open(file_name)
@@ -86,18 +86,24 @@ for prefix, the_type, value in ijson.parse(arquivo):
     # pois nesse momento, ele tanto é o que mais recebe, quanto o
     # que menos recebe.
     if not funcionario_mais_recebe:
-        funcionario_mais_recebe = funcionario.copy()
+        funcionario_mais_recebe.append(funcionario.copy())
     else:
         # caso contrário já vamos verificar se o salário é maior do que o que é maior atualmente
         # lembrem-se, estamos dentro de um loop
-        if salario > funcionario_mais_recebe['salario']:
-            funcionario_mais_recebe = funcionario.copy()
+        if salario > funcionario_mais_recebe[0]['salario']:  # a verificação é sempre feita pelo primeiro elemento
+            funcionario_mais_recebe = []  # limpa todos os funcionários, pois agora temos um novo que mais recebe
+            funcionario_mais_recebe.append(funcionario.copy())
+        elif salario == funcionario_mais_recebe[0]['salario']:
+            funcionario_mais_recebe.append(funcionario.copy())  # se o salario for o mesmo, apenas adicionamos ele na lista
 
     if not funcionario_menos_recebe:
-        funcionario_menos_recebe = funcionario.copy()
+        funcionario_menos_recebe.append(funcionario.copy())
     else:
-        if salario < funcionario_menos_recebe['salario']:
-            funcionario_menos_recebe = funcionario.copy()
+        if salario < funcionario_menos_recebe[0]['salario']:
+            funcionario_menos_recebe = []
+            funcionario_menos_recebe.append(funcionario.copy())
+        elif salario == funcionario_menos_recebe[0]['salario']:
+            funcionario_menos_recebe.append(funcionario.copy())
 
     area_codigo = funcionario['area']
 
@@ -164,22 +170,22 @@ for prefix, the_type, value in ijson.parse(arquivo):
     
 
 funcionario_media_receita = funcionario_soma_receita / funcionario_conta
+for funcionario in funcionario_mais_recebe:
+    print(u"global_max|%s %s|%.2f" % (funcionario['nome'], funcionario['sobrenome'], funcionario['salario']))
+for funcionario in funcionario_menos_recebe:
+    print(u"global_min|%s %s|%.2f" % (funcionario['nome'], funcionario['sobrenome'], funcionario['salario']))
+print(u"global_avg|%.2f" % funcionario_media_receita)
 
-funcionario = funcionario_mais_recebe
-print(u"O Funcionario que mais recebe é %s %s, de ID %s com o salário de %d" % (funcionario['nome'], funcionario['sobrenome'], funcionario['id'], funcionario['salario']))
-funcionario = funcionario_menos_recebe
-print(u"O Funcionario que menos recebe é %s %s, de ID %s com o salário de %d" % (funcionario['nome'], funcionario['sobrenome'], funcionario['id'], funcionario['salario']))
-print(u'A Média de Salário da empresa é de %d' % funcionario_media_receita)
 for area_codigo, area in funcionario_area_mais_recebe.items():
-    print(u'\nNa área %s, %s %s é o funcionário que MAIS recebe, com um salário de %d' % (areas[area_codigo]['nome'], area['nome'], area['sobrenome'], area['salario']))
-    area_menos = funcionario_area_menos_recebe[area_codigo]
-    print(u'O que MENOS recebe é o funcionário %s %s, com um salário de %d' % (area_menos['nome'], area_menos['sobrenome'], area_menos['salario']))
+    print(u"area_max|%s|%s %s|%.2f" % (areas[area_codigo]['nome'], area['nome'], area['sobrenome'], area['salario']))
+for area_codigo, area in funcionario_area_menos_recebe.items():
+    print(u"area_min|%s|%s %s|%.2f" % (areas[area_codigo]['nome'], area['nome'], area['sobrenome'], area['salario']))
+for area_codigo, area in areas.items():
     media = funcionario_area_soma_receita[area_codigo] / funcionario_area_conta[area_codigo]
-    print(u'E a média salarial nessa área é de %d\n' % media)
+    print(u"area_avg|%s|%.2f" % (areas[area_codigo]['nome'], media))
 
-print(u'A área com mais funcionários é %s' % area_mais_funcionarios['nome'])
-print(u'A área com menos funcionários é %s' % area_menos_funcionarios['nome'])
-print('')
+print(u"most_employees|%s|%d" % (area_mais_funcionarios['nome'], area_funcionarios_soma[area_mais_funcionarios['codigo']]))
+print(u"least_employees|%s|%d" % (area_menos_funcionarios['nome'], area_funcionarios_soma[area_menos_funcionarios['codigo']]))
 for sobrenome in sobrenome_controle_duplicados:
     funcionario = sobrenome_mais_recebe[sobrenome]
-    print(u"De sobrenome %s, o funcionário que mais recebe é %s %s, com um salário de %d" % (sobrenome, funcionario['nome'], funcionario['sobrenome'], funcionario['salario']))
+    print(u"last_name_max|%s|%s %s|%.2f" % (funcionario['nome'], funcionario['nome'], funcionario['sobrenome'], funcionario['salario']))
