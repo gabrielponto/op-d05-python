@@ -10,9 +10,11 @@ Das pessoas que têm o mesmo sobrenome, aquela que recebe mais (não inclua sobr
 import ijson
 import os
 import sys
+import locale
+import codecs
 
 # abre o arquivo json
-file_name = 'funcionarios.json'
+file_name = 'funcionarios-5M.json'
 arquivo = open(file_name)
 file_size = os.path.getsize(file_name)
 # Aqui declaramos todas as variáveis que utilizaremos para armazenar os resultados desejados
@@ -144,14 +146,16 @@ for prefix, the_type, value in ijson.parse(arquivo):
         if area_funcionarios_soma[area_codigo] > area_funcionarios_soma[area_mais_funcionarios[0]['codigo']]:
             area_mais_funcionarios = [area.copy()]
         elif area_funcionarios_soma[area_codigo] == area_funcionarios_soma[area_mais_funcionarios[0]['codigo']]:
-            area_mais_funcionarios.append(area.copy())
+            if not area in area_mais_funcionarios:
+                area_mais_funcionarios.append(area.copy())
     if not area_menos_funcionarios:
         area_menos_funcionarios = [area.copy()]
     else:
         if area_funcionarios_soma[area_codigo] < area_funcionarios_soma[area_menos_funcionarios[0]['codigo']]:
             area_menos_funcionarios = [area.copy()]
         elif area_funcionarios_soma[area_codigo] == area_funcionarios_soma[area_menos_funcionarios[0]['codigo']]:
-            area_menos_funcionarios.append(area.copy())
+            if not area in area_menos_funcionarios:
+                area_menos_funcionarios.append(area.copy())
 
     # antes de adicionar o sobrenome no controle é preciso verificar se já existe
     sobrenome = funcionario['sobrenome']
@@ -182,10 +186,11 @@ for prefix, the_type, value in ijson.parse(arquivo):
     funcionario_conta += 1
     funcionario = {}
     
-
+sys.stdout = codecs.getwriter(locale.getpreferredencoding())(sys.stdout) 
 funcionario_media_receita = funcionario_soma_receita / funcionario_conta
 for funcionario in funcionario_mais_recebe:
     print(u"global_max|%s %s|%.2f" % (funcionario['nome'], funcionario['sobrenome'], funcionario['salario']))
+
 for funcionario in funcionario_menos_recebe:
     print(u"global_min|%s %s|%.2f" % (funcionario['nome'], funcionario['sobrenome'], funcionario['salario']))
 print(u"global_avg|%.2f" % funcionario_media_receita)
@@ -197,8 +202,11 @@ for area_codigo, area in funcionario_area_menos_recebe.items():
     for funcionario in area:
         print(u"area_min|%s|%s %s|%.2f" % (areas[area_codigo]['nome'], funcionario['nome'], funcionario['sobrenome'], funcionario['salario']))
 for area_codigo, area in areas.items():
-    media = funcionario_area_soma_receita[area_codigo] / funcionario_area_conta[area_codigo]
-    print(u"area_avg|%s|%.2f" % (areas[area_codigo]['nome'], media))
+    try:
+        media = funcionario_area_soma_receita[area_codigo] / funcionario_area_conta[area_codigo]
+        print(u"area_avg|%s|%.2f" % (areas[area_codigo]['nome'], media))
+    except KeyError:
+        pass
 
 for funcionario in area_mais_funcionarios:
     print(u"most_employees|%s|%d" % (funcionario['nome'], area_funcionarios_soma[funcionario['codigo']]))
@@ -207,4 +215,4 @@ for funcionario in area_menos_funcionarios:
 for sobrenome in sobrenome_controle_duplicados:
     funcionarios = sobrenome_mais_recebe[sobrenome]
     for funcionario in funcionarios:
-        print(u"last_name_max|%s|%s %s|%.2f" % (funcionario['nome'], funcionario['nome'], funcionario['sobrenome'], funcionario['salario']))
+        print(u"last_name_max|%s|%s %s|%.2f" % (sobrenome, funcionario['nome'], funcionario['sobrenome'], funcionario['salario']))
